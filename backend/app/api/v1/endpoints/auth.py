@@ -21,6 +21,11 @@ def get_supabase_client() -> Client:
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 
+def get_supabase_admin_client() -> Client:
+    """Get Supabase admin client for auth operations that bypass email confirmation."""
+    return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
+
+
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def signup(user_data: UserCreate) -> TokenResponse:
     """
@@ -40,13 +45,15 @@ async def signup(user_data: UserCreate) -> TokenResponse:
         HTTPException: 500 if user creation fails
     """
     try:
-        # Get Supabase client
-        supabase = get_supabase_client()
+        # Get Supabase admin client to bypass email confirmation in development
+        supabase = get_supabase_admin_client()
         
         # Create user in Supabase Auth
-        auth_response = supabase.auth.sign_up({
+        # Using admin client automatically confirms the email
+        auth_response = supabase.auth.admin.create_user({
             "email": user_data.email,
             "password": user_data.password,
+            "email_confirm": True,  # Auto-confirm for development
         })
         
         if not auth_response.user:
@@ -96,9 +103,21 @@ async def signup(user_data: UserCreate) -> TokenResponse:
             metadata=db_user.get("metadata")
         )
         
-        # Get token information
-        access_token = auth_response.session.access_token if auth_response.session else ""
-        expires_in = auth_response.session.expires_in if auth_response.session else settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        # Generate session for the newly created user
+        # Since admin.create_user doesn't return a session, we need to sign in
+        try:
+            login_client = get_supabase_client()
+            session_response = login_client.auth.sign_in_with_password({
+                "email": user_data.email,
+                "password": user_data.password,
+            })
+            access_token = session_response.session.access_token if session_response.session else ""
+            expires_in = session_response.session.expires_in if session_response.session else settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        except Exception as e:
+            print(f"Failed to create session after signup: {e}")
+            # Fallback to no token - user will need to login
+            access_token = ""
+            expires_in = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
         
         return TokenResponse(
             access_token=access_token,
