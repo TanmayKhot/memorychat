@@ -1,0 +1,207 @@
+/* Custom styles for MemoryChat Frontend */
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.7);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: rgba(75, 85, 99, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(75, 85, 99, 0.7);
+}
+
+/* Message bubble animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message-bubble {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Connection status indicator */
+.status-connected {
+    background-color: #10b981;
+}
+
+.status-disconnected {
+    background-color: #ef4444;
+}
+
+.status-connecting {
+    background-color: #f59e0b;
+}
+
+/* Modal backdrop blur effect */
+.modal-backdrop {
+    backdrop-filter: blur(4px);
+}
+
+/* Focus visible styles */
+*:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Disabled state styling */
+button:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Session item hover effect */
+.session-item {
+    transition: background-color 0.2s ease;
+}
+
+.session-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark .session-item:hover {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
+/* Privacy mode indicator colors */
+.privacy-normal {
+    border-left: 3px solid #10b981;
+}
+
+.privacy-incognito {
+    border-left: 3px solid #ef4444;
+}
+
+.privacy-pause_memory {
+    border-left: 3px solid #f59e0b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #sidebar {
+        position: fixed;
+        left: -100%;
+        z-index: 40;
+        transition: left 0.3s ease;
+    }
+
+    #sidebar.open {
+        left: 0;
+    }
+}
+
+/* Textarea auto-resize */
+#messageInput {
+    min-height: 44px;
+    max-height: 200px;
+}
+
+/* Smooth transitions for theme changes */
+* {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Custom button styles */
+.btn-primary {
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Warning/Error message styles */
+.warning-message {
+    background-color: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.dark .warning-message {
+    background-color: #78350f;
+    border-left-color: #f59e0b;
+}
+
+.error-message {
+    background-color: #fee2e2;
+    border-left: 4px solid #ef4444;
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.dark .error-message {
+    background-color: #7f1d1d;
+    border-left-color: #ef4444;
+}
+
+/* Success message styles */
+.success-message {
+    background-color: #d1fae5;
+    border-left: 4px solid #10b981;
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.dark .success-message {
+    background-color: #064e3b;
+    border-left-color: #10b981;
+}
+

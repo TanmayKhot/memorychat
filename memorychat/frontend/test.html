@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoryChat Frontend Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #3b82f6;
+            background: #f9fafb;
+        }
+        .test-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-item.passing {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .test-item.failing {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .test-item.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .summary {
+            padding: 15px;
+            background: #e0e7ff;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .error {
+            color: #dc2626;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        h1 {
+            color: #1f2937;
+        }
+        h2 {
+            color: #374151;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>MemoryChat Frontend Tests</h1>
+    <div class="test-container">
+        <button id="runTestsBtn">Run All Tests</button>
+        <div id="summary" class="summary" style="display: none;">
+            <strong>Test Summary:</strong>
+            <div id="summaryContent"></div>
+        </div>
+    </div>
+
+    <div id="testResults"></div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // Test configuration
+        const TEST_CONFIG = {
+            API_BASE_URL: 'http://127.0.0.1:8000',
+            TIMEOUT: 10000
+        };
+
+        // Test results storage
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            tests: []
+        };
+
+        // Test helper functions
+        async function apiRequest(endpoint, options = {}) {
+            const url = `${TEST_CONFIG.API_BASE_URL}${endpoint}`;
+            const response = await fetch(url, {
+                headers: { 'Content-Type': 'application/json' },
+                ...options
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                throw new Error(error.detail || `HTTP ${response.status}`);
+            }
+            return await response.json();
+        }
+
+        function createTestItem(name, status, error = null) {
+            const item = document.createElement('div');
+            item.className = `test-item ${status}`;
+            item.innerHTML = `
+                <span><strong>${name}</strong></span>
+                <span>${status === 'passing' ? '✓ PASS' : status === 'failing' ? '✗ FAIL' : '⏳ PENDING'}</span>
+                ${error ? `<div class="error">${error}</div>` : ''}
+            `;
+            return item;
+        }
+
+        function updateSummary() {
+            const summaryDiv = document.getElementById('summary');
+            const summaryContent = document.getElementById('summaryContent');
+            summaryDiv.style.display = 'block';
+            summaryContent.innerHTML = `
+                Total: ${testResults.total} | 
+                Passed: <span style="color: green;">${testResults.passed}</span> | 
+                Failed: <span style="color: red;">${testResults.failed}</span>
+            `;
+        }
+
+        function addTestResult(name, passed, error = null) {
+            testResults.total++;
+            if (passed) {
+                testResults.passed++;
+            } else {
+                testResults.failed++;
+            }
+            testResults.tests.push({ name, passed, error });
+        }
+
+        // Test functions
+        async function testApiHealth() {
+            try {
+                const result = await apiRequest('/health');
+                return result.status === 'healthy';
+            } catch (error) {
+                throw new Error(`Health check failed: ${error.message}`);
+            }
+        }
+
+        async function testCreateUser() {
+            try {
+                const email = `test_${Date.now()}@example.com`;
+                const username = `testuser_${Date.now()}`;
+                const user = await apiRequest('/api/users', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, username })
+                });
+                return user && user.id && user.email === email && user.username === username;
+            } catch (error) {
+                throw new Error(`Create user failed: ${error.message}`);
+            }
+        }
+
+        async function testGetUsers() {
+            try {
+                const users = await apiRequest('/api/users');
+                return Array.isArray(users) && users.length > 0;
+            } catch (error) {
+                throw new Error(`Get users failed: ${error.message}`);
+            }
+        }
+
+        async function testCreateProfile(userId) {
+            try {
+                const name = `Test Profile ${Date.now()}`;
+                const profile = await apiRequest(`/api/users/${userId}/profiles`, {
+                    method: 'POST',
+                    body: JSON.stringify({ name, description: 'Test description' })
+                });
+                return profile && profile.id && profile.name === name;
+            } catch (error) {
+                throw new Error(`Create profile failed: ${error.message}`);
+            }
+        }
+
+        async function testGetProfiles(userId) {
+            try {
+                const profiles = await apiRequest(`/api/users/${userId}/profiles`);
+                return Array.isArray(profiles);
+            } catch (error) {
+                throw new Error(`Get profiles failed: ${error.message}`);
+            }
+        }
+
+        async function testCreateSession(userId, profileId) {
+            try {
+                const session = await apiRequest(`/api/users/${userId}/sessions`, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        memory_profile_id: profileId, 
+                        privacy_mode: 'normal' 
+                    })
+                });
+                return session && session.id && session.privacy_mode === 'normal';
+            } catch (error) {
+                throw new Error(`Create session failed: ${error.message}`);
+            }
+        }
+
+        async function testGetSessions(userId) {
+            try {
+                const sessions = await apiRequest(`/api/users/${userId}/sessions`);
+                return Array.isArray(sessions);
+            } catch (error) {
+                throw new Error(`Get sessions failed: ${error.message}`);
+            }
+        }
+
+        async function testSendMessage(sessionId) {
+            try {
+                const response = await apiRequest('/api/chat/message', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        message: 'Hello, this is a test message'
+                    })
+                });
+                return response && response.message && typeof response.memories_used === 'number';
+            } catch (error) {
+                throw new Error(`Send message failed: ${error.message}`);
+            }
+        }
+
+        async function testGetMessages(sessionId) {
+            try {
+                const messages = await apiRequest(`/api/sessions/${sessionId}/messages`);
+                return Array.isArray(messages) && messages.length > 0;
+            } catch (error) {
+                throw new Error(`Get messages failed: ${error.message}`);
+            }
+        }
+
+        async function testUpdateProfile(profileId) {
+            try {
+                const newName = `Updated Profile ${Date.now()}`;
+                const profile = await apiRequest(`/api/profiles/${profileId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name: newName })
+                });
+                return profile && profile.name === newName;
+            } catch (error) {
+                throw new Error(`Update profile failed: ${error.message}`);
+            }
+        }
+
+        async function testDeleteSession(sessionId) {
+            try {
+                await apiRequest(`/api/sessions/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                return true;
+            } catch (error) {
+                throw new Error(`Delete session failed: ${error.message}`);
+            }
+        }
+
+        async function testDeleteProfile(profileId) {
+            try {
+                await apiRequest(`/api/profiles/${profileId}`, {
+                    method: 'DELETE'
+                });
+                return true;
+            } catch (error) {
+                throw new Error(`Delete profile failed: ${error.message}`);
+            }
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            testResults = { total: 0, passed: 0, failed: 0, tests: [] };
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '';
+
+            // Test sections
+            const sections = [
+                { title: 'API Connection Tests', tests: [] },
+                { title: 'User Management Tests', tests: [] },
+                { title: 'Profile Management Tests', tests: [] },
+                { title: 'Session Management Tests', tests: [] },
+                { title: 'Chat Functionality Tests', tests: [] },
+                { title: 'CRUD Operations Tests', tests: [] }
+            ];
+
+            let testUserId = null;
+            let testProfileId = null;
+            let testSessionId = null;
+            let testProfileId2 = null;
+
+            try {
+                // API Connection Tests
+                const section0 = document.createElement('div');
+                section0.className = 'test-section';
+                section0.innerHTML = '<h2>API Connection Tests</h2>';
+                resultsDiv.appendChild(section0);
+
+                let test = createTestItem('API Health Check', 'pending');
+                section0.appendChild(test);
+                try {
+                    const passed = await Promise.race([
+                        testApiHealth(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), TEST_CONFIG.TIMEOUT))
+                    ]);
+                    test.replaceWith(createTestItem('API Health Check', 'passing'));
+                    addTestResult('API Health Check', true);
+                } catch (error) {
+                    test.replaceWith(createTestItem('API Health Check', 'failing', error.message));
+                    addTestResult('API Health Check', false, error.message);
+                }
+
+                // User Management Tests
+                const section1 = document.createElement('div');
+                section1.className = 'test-section';
+                section1.innerHTML = '<h2>User Management Tests</h2>';
+                resultsDiv.appendChild(section1);
+
+                test = createTestItem('Get Users', 'pending');
+                section1.appendChild(test);
+                try {
+                    const passed = await testGetUsers();
+                    test.replaceWith(createTestItem('Get Users', 'passing'));
+                    addTestResult('Get Users', true);
+                } catch (error) {
+                    test.replaceWith(createTestItem('Get Users', 'failing', error.message));
+                    addTestResult('Get Users', false, error.message);
+                }
+
+                test = createTestItem('Create User', 'pending');
+                section1.appendChild(test);
+                try {
+                    const user = await apiRequest('/api/users', {
+                        method: 'POST',
+                        body: JSON.stringify({ 
+                            email: `test_${Date.now()}@example.com`, 
+                            username: `testuser_${Date.now()}` 
+                        })
+                    });
+                    testUserId = user.id;
+                    test.replaceWith(createTestItem('Create User', 'passing'));
+                    addTestResult('Create User', true);
+                } catch (error) {
+                    test.replaceWith(createTestItem('Create User', 'failing', error.message));
+                    addTestResult('Create User', false, error.message);
+                }
+
+                // Profile Management Tests
+                if (testUserId) {
+                    const section2 = document.createElement('div');
+                    section2.className = 'test-section';
+                    section2.innerHTML = '<h2>Profile Management Tests</h2>';
+                    resultsDiv.appendChild(section2);
+
+                    test = createTestItem('Create Profile', 'pending');
+                    section2.appendChild(test);
+                    try {
+                        const profile = await testCreateProfile(testUserId);
+                        testProfileId = profile.id;
+                        test.replaceWith(createTestItem('Create Profile', 'passing'));
+                        addTestResult('Create Profile', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Create Profile', 'failing', error.message));
+                        addTestResult('Create Profile', false, error.message);
+                    }
+
+                    test = createTestItem('Get Profiles', 'pending');
+                    section2.appendChild(test);
+                    try {
+                        const passed = await testGetProfiles(testUserId);
+                        test.replaceWith(createTestItem('Get Profiles', 'passing'));
+                        addTestResult('Get Profiles', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Get Profiles', 'failing', error.message));
+                        addTestResult('Get Profiles', false, error.message);
+                    }
+
+                    // Create second profile for delete test
+                    if (testProfileId) {
+                        test = createTestItem('Create Second Profile', 'pending');
+                        section2.appendChild(test);
+                        try {
+                            const profile2 = await testCreateProfile(testUserId);
+                            testProfileId2 = profile2.id;
+                            test.replaceWith(createTestItem('Create Second Profile', 'passing'));
+                            addTestResult('Create Second Profile', true);
+                        } catch (error) {
+                            test.replaceWith(createTestItem('Create Second Profile', 'failing', error.message));
+                            addTestResult('Create Second Profile', false, error.message);
+                        }
+                    }
+                }
+
+                // Session Management Tests
+                if (testUserId && testProfileId) {
+                    const section3 = document.createElement('div');
+                    section3.className = 'test-section';
+                    section3.innerHTML = '<h2>Session Management Tests</h2>';
+                    resultsDiv.appendChild(section3);
+
+                    test = createTestItem('Create Session', 'pending');
+                    section3.appendChild(test);
+                    try {
+                        const session = await testCreateSession(testUserId, testProfileId);
+                        testSessionId = session.id;
+                        test.replaceWith(createTestItem('Create Session', 'passing'));
+                        addTestResult('Create Session', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Create Session', 'failing', error.message));
+                        addTestResult('Create Session', false, error.message);
+                    }
+
+                    test = createTestItem('Get Sessions', 'pending');
+                    section3.appendChild(test);
+                    try {
+                        const passed = await testGetSessions(testUserId);
+                        test.replaceWith(createTestItem('Get Sessions', 'passing'));
+                        addTestResult('Get Sessions', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Get Sessions', 'failing', error.message));
+                        addTestResult('Get Sessions', false, error.message);
+                    }
+                }
+
+                // Chat Functionality Tests
+                if (testSessionId) {
+                    const section4 = document.createElement('div');
+                    section4.className = 'test-section';
+                    section4.innerHTML = '<h2>Chat Functionality Tests</h2>';
+                    resultsDiv.appendChild(section4);
+
+                    test = createTestItem('Send Message', 'pending');
+                    section4.appendChild(test);
+                    try {
+                        const passed = await testSendMessage(testSessionId);
+                        test.replaceWith(createTestItem('Send Message', 'passing'));
+                        addTestResult('Send Message', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Send Message', 'failing', error.message));
+                        addTestResult('Send Message', false, error.message);
+                    }
+
+                    test = createTestItem('Get Messages', 'pending');
+                    section4.appendChild(test);
+                    try {
+                        const passed = await testGetMessages(testSessionId);
+                        test.replaceWith(createTestItem('Get Messages', 'passing'));
+                        addTestResult('Get Messages', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Get Messages', 'failing', error.message));
+                        addTestResult('Get Messages', false, error.message);
+                    }
+                }
+
+                // CRUD Operations Tests
+                if (testProfileId && testSessionId && testProfileId2) {
+                    const section5 = document.createElement('div');
+                    section5.className = 'test-section';
+                    section5.innerHTML = '<h2>CRUD Operations Tests</h2>';
+                    resultsDiv.appendChild(section5);
+
+                    test = createTestItem('Update Profile', 'pending');
+                    section5.appendChild(test);
+                    try {
+                        const passed = await testUpdateProfile(testProfileId);
+                        test.replaceWith(createTestItem('Update Profile', 'passing'));
+                        addTestResult('Update Profile', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Update Profile', 'failing', error.message));
+                        addTestResult('Update Profile', false, error.message);
+                    }
+
+                    test = createTestItem('Delete Session', 'pending');
+                    section5.appendChild(test);
+                    try {
+                        const passed = await testDeleteSession(testSessionId);
+                        test.replaceWith(createTestItem('Delete Session', 'passing'));
+                        addTestResult('Delete Session', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Delete Session', 'failing', error.message));
+                        addTestResult('Delete Session', false, error.message);
+                    }
+
+                    test = createTestItem('Delete Profile', 'pending');
+                    section5.appendChild(test);
+                    try {
+                        const passed = await testDeleteProfile(testProfileId2);
+                        test.replaceWith(createTestItem('Delete Profile', 'passing'));
+                        addTestResult('Delete Profile', true);
+                    } catch (error) {
+                        test.replaceWith(createTestItem('Delete Profile', 'failing', error.message));
+                        addTestResult('Delete Profile', false, error.message);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Test execution error:', error);
+            }
+
+            updateSummary();
+        }
+
+        // Event listener
+        document.getElementById('runTestsBtn').addEventListener('click', runAllTests);
+    </script>
+</body>
+</html>
+
