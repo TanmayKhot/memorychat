@@ -269,3 +269,4 @@ class VectorService:
         except Exception as e:
             raise RuntimeError(f"Failed to get collection info: {str(e)}") from e
 
+

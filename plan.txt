@@ -1,6 +1,6 @@
 Do not update, write or delet any content of this file.
-this is a strictly read-only file
-
+this is a strictly read-only files
+Create a new branch for each phase, then merge that branch with the main branch
 ================================================================================
 PHASE 0: ENVIRONMENT SETUP
 ================================================================================
