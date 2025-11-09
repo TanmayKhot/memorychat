@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoryChat API Test UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+        
+        .section h2 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            min-height: 100px;
+            font-family: monospace;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button.secondary {
+            background: #6c757d;
+        }
+        
+        button.secondary:hover {
+            background: #545b62;
+        }
+        
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .response pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+        }
+        
+        .response.success {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .response.error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 MemoryChat API Test UI</h1>
+        <div id="status" class="status disconnected">Checking server connection...</div>
+        
+        <div class="grid">
+            <!-- Users Section -->
+            <div class="section">
+                <h2>👤 Users</h2>
+                <div class="form-group">
+                    <button onclick="getAllUsers()">Get All Users</button>
+                    <button onclick="getUserById()" class="secondary">Get User by ID</button>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="userEmail" placeholder="user@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="userUsername" placeholder="username">
+                </div>
+                <button onclick="createUser()">Create User</button>
+                <div id="userResponse" class="response" style="display:none;"></div>
+            </div>
+            
+            <!-- Profiles Section -->
+            <div class="section">
+                <h2>📋 Memory Profiles</h2>
+                <div class="form-group">
+                    <label>User ID:</label>
+                    <input type="number" id="profileUserId" placeholder="1">
+                </div>
+                <div class="form-group">
+                    <label>Profile Name:</label>
+                    <input type="text" id="profileName" placeholder="Work Profile">
+                </div>
+                <div class="form-group">
+                    <label>Description:</label>
+                    <input type="text" id="profileDescription" placeholder="Professional conversations">
+                </div>
+                <button onclick="getUserProfiles()">Get User Profiles</button>
+                <button onclick="createProfile()">Create Profile</button>
+                <div id="profileResponse" class="response" style="display:none;"></div>
+            </div>
+            
+            <!-- Sessions Section -->
+            <div class="section">
+                <h2>💬 Sessions</h2>
+                <div class="form-group">
+                    <label>User ID:</label>
+                    <input type="number" id="sessionUserId" placeholder="1">
+                </div>
+                <div class="form-group">
+                    <label>Profile ID:</label>
+                    <input type="number" id="sessionProfileId" placeholder="1">
+                </div>
+                <div class="form-group">
+                    <label>Privacy Mode:</label>
+                    <select id="privacyMode">
+                        <option value="normal">Normal</option>
+                        <option value="incognito">Incognito</option>
+                        <option value="pause_memory">Pause Memory</option>
+                    </select>
+                </div>
+                <button onclick="getUserSessions()">Get User Sessions</button>
+                <button onclick="createSession()">Create Session</button>
+                <div id="sessionResponse" class="response" style="display:none;"></div>
+            </div>
+            
+            <!-- Chat Section -->
+            <div class="section">
+                <h2>💭 Chat</h2>
+                <div class="form-group">
+                    <label>Session ID:</label>
+                    <input type="number" id="chatSessionId" placeholder="1">
+                </div>
+                <div class="form-group">
+                    <label>Message:</label>
+                    <textarea id="chatMessage" placeholder="Type your message here..."></textarea>
+                </div>
+                <button onclick="sendMessage()">Send Message</button>
+                <button onclick="getMessages()" class="secondary">Get Messages</button>
+                <div id="chatResponse" class="response" style="display:none;"></div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="section">
+            <h2>⚡ Quick Actions</h2>
+            <button onclick="checkHealth()">Check Server Health</button>
+            <button onclick="testWorkflow()" class="secondary">Test Complete Workflow</button>
+            <div id="quickResponse" class="response" style="display:none;"></div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000/api';
+        
+        // Check server connection on load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkHealth();
+        });
+        
+        async function checkHealth() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/health', {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                document.getElementById('status').className = 'status connected';
+                document.getElementById('status').textContent = `✓ Connected - ${data.service}`;
+            } catch (error) {
+                document.getElementById('status').className = 'status disconnected';
+                const errorMsg = error.message || 'Unknown error';
+                document.getElementById('status').textContent = `✗ Connection failed: ${errorMsg}. Make sure backend is running on http://127.0.0.1:8000`;
+                console.error('Health check error:', error);
+            }
+        }
+        
+        function showResponse(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `response ${isError ? 'error' : 'success'}`;
+            element.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        
+        async function createUser() {
+            const email = document.getElementById('userEmail').value;
+            const username = document.getElementById('userUsername').value;
+            
+            if (!email || !username) {
+                alert('Please fill in email and username');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, username })
+                });
+                const data = await response.json();
+                showResponse('userResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('userResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function getAllUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/users`);
+                const data = await response.json();
+                showResponse('userResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('userResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function getUserById() {
+            const id = prompt('Enter User ID:');
+            if (!id) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/${id}`);
+                const data = await response.json();
+                showResponse('userResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('userResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function getUserProfiles() {
+            const userId = document.getElementById('profileUserId').value;
+            if (!userId) {
+                alert('Please enter User ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/${userId}/profiles`);
+                const data = await response.json();
+                showResponse('profileResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('profileResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function createProfile() {
+            const userId = document.getElementById('profileUserId').value;
+            const name = document.getElementById('profileName').value;
+            const description = document.getElementById('profileDescription').value;
+            
+            if (!userId || !name) {
+                alert('Please fill in User ID and Profile Name');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/${userId}/profiles`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+                const data = await response.json();
+                showResponse('profileResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('profileResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function getUserSessions() {
+            const userId = document.getElementById('sessionUserId').value;
+            if (!userId) {
+                alert('Please enter User ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/${userId}/sessions?page=1&limit=10`);
+                const data = await response.json();
+                showResponse('sessionResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('sessionResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function createSession() {
+            const userId = document.getElementById('sessionUserId').value;
+            const profileId = document.getElementById('sessionProfileId').value;
+            const privacyMode = document.getElementById('privacyMode').value;
+            
+            if (!userId || !profileId) {
+                alert('Please fill in User ID and Profile ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/${userId}/sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ memory_profile_id: parseInt(profileId), privacy_mode: privacyMode })
+                });
+                const data = await response.json();
+                showResponse('sessionResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('sessionResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function sendMessage() {
+            const sessionId = document.getElementById('chatSessionId').value;
+            const message = document.getElementById('chatMessage').value;
+            
+            if (!sessionId || !message) {
+                alert('Please fill in Session ID and Message');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/chat/message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: parseInt(sessionId), message })
+                });
+                const data = await response.json();
+                showResponse('chatResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('chatResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function getMessages() {
+            const sessionId = document.getElementById('chatSessionId').value;
+            if (!sessionId) {
+                alert('Please enter Session ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${sessionId}/messages?page=1&limit=50`);
+                const data = await response.json();
+                showResponse('chatResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('chatResponse', { error: error.message }, true);
+            }
+        }
+        
+        async function testWorkflow() {
+            const log = [];
+            log.push('🚀 Starting complete workflow test...\n');
+            
+            try {
+                // 1. Create user
+                log.push('1. Creating user...');
+                const userRes = await fetch(`${API_BASE}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: `test_${Date.now()}@example.com`, 
+                        username: `testuser_${Date.now()}` 
+                    })
+                });
+                const user = await userRes.json();
+                log.push(`   ✓ User created: ID ${user.id}\n`);
+                
+                // 2. Create profile
+                log.push('2. Creating profile...');
+                const profileRes = await fetch(`${API_BASE}/users/${user.id}/profiles`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: 'Test Profile',
+                        description: 'Workflow test profile'
+                    })
+                });
+                const profile = await profileRes.json();
+                log.push(`   ✓ Profile created: ID ${profile.id}\n`);
+                
+                // 3. Create session
+                log.push('3. Creating session...');
+                const sessionRes = await fetch(`${API_BASE}/users/${user.id}/sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        memory_profile_id: profile.id,
+                        privacy_mode: 'normal'
+                    })
+                });
+                const session = await sessionRes.json();
+                log.push(`   ✓ Session created: ID ${session.id}\n`);
+                
+                // 4. Send message
+                log.push('4. Sending message...');
+                const messageRes = await fetch(`${API_BASE}/chat/message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        session_id: session.id,
+                        message: 'Hello! This is a test message.'
+                    })
+                });
+                const message = await messageRes.json();
+                log.push(`   ✓ Message sent and response received\n`);
+                log.push(`   Response: ${message.message.substring(0, 100)}...\n`);
+                
+                log.push('\n✅ Workflow test completed successfully!');
+                showResponse('quickResponse', { 
+                    success: true,
+                    log: log.join('\n'),
+                    user_id: user.id,
+                    profile_id: profile.id,
+                    session_id: session.id
+                });
+            } catch (error) {
+                log.push(`\n❌ Error: ${error.message}`);
+                showResponse('quickResponse', { 
+                    success: false,
+                    error: error.message,
+                    log: log.join('\n')
+                }, true);
+            }
+        }
+    </script>
+</body>
+</html>
+

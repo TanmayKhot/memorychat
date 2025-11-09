@@ -444,9 +444,11 @@ class ContextCoordinatorAgent(BaseAgent):
         
         # Get memory extraction info
         memory_extraction_info = {}
+        extracted_memories = []
         if memory_result:
+            extracted_memories = memory_result.get("data", {}).get("memories", [])
             memory_extraction_info = {
-                "memories_extracted": len(memory_result.get("data", {}).get("memories", [])),
+                "memories_extracted": len(extracted_memories),
                 "memories_stored": memory_result.get("success", False),
             }
         
@@ -465,6 +467,7 @@ class ContextCoordinatorAgent(BaseAgent):
             "warnings": warnings,
             "memory_info": memory_info,
             "memory_extraction_info": memory_extraction_info,
+            "extracted_memories": extracted_memories,  # Include actual memories for saving
             "analysis_info": analysis_info,
             "privacy_mode": orchestration_context.get("privacy_mode"),
             "sanitized": orchestration_context.get("sanitized", False),
