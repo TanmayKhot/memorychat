@@ -126,14 +126,20 @@ class ChatService:
                 assistant_message=assistant_message
             )
             
-            # Save memories if applicable
+            # Save memories if applicable (ONLY in normal mode)
             memory_extraction_info = response_data.get("memory_extraction_info", {})
             memories_extracted = memory_extraction_info.get("memories_extracted", 0)
             extracted_memories = response_data.get("extracted_memories", [])
             new_memories_created = 0
             
-            if memories_extracted > 0 and session.privacy_mode == "normal" and extracted_memories:
-                # Save memories to database and vector store
+            # Explicitly check privacy mode - never save in incognito or pause_memory mode
+            privacy_mode = session.privacy_mode.lower()
+            if privacy_mode == "incognito":
+                self.logger.debug(f"Skipping memory storage in INCOGNITO mode for session {session_id}")
+            elif privacy_mode == "pause_memory":
+                self.logger.debug(f"Skipping memory storage in PAUSE_MEMORY mode for session {session_id}")
+            elif memories_extracted > 0 and privacy_mode == "normal" and extracted_memories:
+                # Save memories to database and vector store (only in normal mode)
                 if session.user_id and session.memory_profile_id:
                     new_memories_created = self._save_memories(
                         memories=extracted_memories,
@@ -147,6 +153,12 @@ class ChatService:
                     self.logger.warning(
                         f"Cannot save memories: missing user_id or profile_id for session {session_id}"
                     )
+            elif memories_extracted > 0:
+                # Log if memories were extracted but not saved (shouldn't happen in normal mode)
+                self.logger.warning(
+                    f"Memories extracted ({memories_extracted}) but not saved for session {session_id} "
+                    f"(privacy_mode={privacy_mode}, has_extracted={bool(extracted_memories)})"
+                )
             
             # Extract metadata
             memory_info = response_data.get("memory_info", {})

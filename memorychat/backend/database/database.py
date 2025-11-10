@@ -77,8 +77,34 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+def create_indexes():
+    """Create database indexes for performance optimization."""
+    from sqlalchemy import text
+    
+    indexes = [
+        "CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON chat_sessions(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_messages_session_id ON chat_messages(session_id)",
+        "CREATE INDEX IF NOT EXISTS idx_memories_profile_id ON memories(memory_profile_id)",
+        "CREATE INDEX IF NOT EXISTS idx_agent_logs_session_id ON agent_logs(session_id)",
+        "CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_memories_created_at ON memories(created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_messages_created_at ON chat_messages(created_at)",
+    ]
+    
+    with engine.connect() as conn:
+        for index_sql in indexes:
+            try:
+                conn.execute(text(index_sql))
+                conn.commit()
+            except Exception as e:
+                print(f"Warning: Failed to create index: {e}")
+    
+    print("✓ Database indexes created")
+
+
 def init_db():
-    """Initialize the database by creating all tables."""
+    """Initialize the database by creating all tables and indexes."""
     create_all_tables()
+    create_indexes()
     print("✓ Database initialized successfully")
 

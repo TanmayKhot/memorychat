@@ -318,6 +318,9 @@ async def search_memories(
         )
     
     try:
+        # Initialize memories list
+        memories = []
+        
         # Use MemoryRetrievalAgent for semantic search
         retrieval_agent = MemoryRetrievalAgent()
         agent_input = {
@@ -340,11 +343,14 @@ async def search_memories(
             
             # Get full memory objects
             from database.models import Memory
-            memories = []
             for mem_id in memory_ids[:limit]:
                 mem = db.query(Memory).filter(Memory.id == mem_id).first()
                 if mem and mem.memory_profile_id == profile_id:
                     memories.append(mem)
+        
+        # If no memories found via agent, fallback to database search
+        if not memories:
+            memories = db_service.search_memories(profile_id, query, limit=limit)
         
         # Convert to response models
         result_list = []
