@@ -4,6 +4,7 @@ Pydantic models for API request/response schemas.
 This module defines all request and response models used by the FastAPI endpoints,
 ensuring proper validation and serialization of API data.
 """
+import re
 from datetime import datetime
 from enum import Enum
 from typing import Optional, List, Dict, Any
@@ -63,10 +64,33 @@ class CreateUserRequest(BaseModel):
     @field_validator('username')
     @classmethod
     def validate_username(cls, v: str) -> str:
-        """Validate username is not empty."""
+        """Validate username is not empty and doesn't contain SQL injection patterns."""
         if not v or not v.strip():
             raise ValueError("Username cannot be empty")
-        return v.strip()
+        
+        v = v.strip()
+        
+        # Check for SQL injection patterns
+        sql_injection_patterns = [
+            r"['\";].*DROP\s+TABLE",
+            r"['\";].*DELETE\s+FROM",
+            r"['\";].*UPDATE\s+.*SET",
+            r"['\";].*INSERT\s+INTO",
+            r"['\";].*ALTER\s+TABLE",
+            r"['\";].*EXEC\s*\(",
+            r"['\";].*EXECUTE\s*\(",
+            r"['\";].*UNION\s+SELECT",
+            r"['\";].*OR\s+['\"]?1['\"]?\s*=\s*['\"]?1",
+            r"['\";].*--",
+            r"['\";].*/\*",
+            r"['\";].*\*/",
+        ]
+        
+        for pattern in sql_injection_patterns:
+            if re.search(pattern, v, re.IGNORECASE):
+                raise ValueError("Username contains invalid characters or patterns")
+        
+        return v
 
     class Config:
         json_schema_extra = {
@@ -116,10 +140,33 @@ class CreateMemoryProfileRequest(BaseModel):
     @field_validator('name')
     @classmethod
     def validate_name(cls, v: str) -> str:
-        """Validate name is not empty."""
+        """Validate name is not empty and doesn't contain SQL injection patterns."""
         if not v or not v.strip():
             raise ValueError("Profile name cannot be empty")
-        return v.strip()
+        
+        v = v.strip()
+        
+        # Check for SQL injection patterns
+        sql_injection_patterns = [
+            r"['\";].*DROP\s+TABLE",
+            r"['\";].*DELETE\s+FROM",
+            r"['\";].*UPDATE\s+.*SET",
+            r"['\";].*INSERT\s+INTO",
+            r"['\";].*ALTER\s+TABLE",
+            r"['\";].*EXEC\s*\(",
+            r"['\";].*EXECUTE\s*\(",
+            r"['\";].*UNION\s+SELECT",
+            r"['\";].*OR\s+['\"]?1['\"]?\s*=\s*['\"]?1",
+            r"['\";].*--",
+            r"['\";].*/\*",
+            r"['\";].*\*/",
+        ]
+        
+        for pattern in sql_injection_patterns:
+            if re.search(pattern, v, re.IGNORECASE):
+                raise ValueError("Profile name contains invalid characters or patterns")
+        
+        return v
 
     class Config:
         json_schema_extra = {
@@ -148,10 +195,36 @@ class UpdateMemoryProfileRequest(BaseModel):
     @field_validator('name')
     @classmethod
     def validate_name(cls, v: Optional[str]) -> Optional[str]:
-        """Validate name is not empty if provided."""
+        """Validate name is not empty if provided and doesn't contain SQL injection patterns."""
         if v is not None and (not v or not v.strip()):
             raise ValueError("Profile name cannot be empty")
-        return v.strip() if v else None
+        
+        if v is None:
+            return None
+        
+        v = v.strip()
+        
+        # Check for SQL injection patterns
+        sql_injection_patterns = [
+            r"['\";].*DROP\s+TABLE",
+            r"['\";].*DELETE\s+FROM",
+            r"['\";].*UPDATE\s+.*SET",
+            r"['\";].*INSERT\s+INTO",
+            r"['\";].*ALTER\s+TABLE",
+            r"['\";].*EXEC\s*\(",
+            r"['\";].*EXECUTE\s*\(",
+            r"['\";].*UNION\s+SELECT",
+            r"['\";].*OR\s+['\"]?1['\"]?\s*=\s*['\"]?1",
+            r"['\";].*--",
+            r"['\";].*/\*",
+            r"['\";].*\*/",
+        ]
+        
+        for pattern in sql_injection_patterns:
+            if re.search(pattern, v, re.IGNORECASE):
+                raise ValueError("Profile name contains invalid characters or patterns")
+        
+        return v
 
     class Config:
         json_schema_extra = {
