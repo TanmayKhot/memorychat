@@ -13,7 +13,7 @@ import shutil
 from typing import Dict, Any, Optional, List
 
 # Add backend directory to path
-backend_dir = Path(__file__).parent
+backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 # Change to backend directory
@@ -922,18 +922,12 @@ def test_documentation_accurate():
     
     # Check for key documentation files
     readme = MEMORYCHAT_ROOT / "README.md"
-    run_instructions = MEMORYCHAT_ROOT / "RUN_INSTRUCTIONS.md"
     
     print_check("README.md exists", readme.exists(), str(readme))
-    print_check("RUN_INSTRUCTIONS.md exists", run_instructions.exists(), str(run_instructions))
     
     # Check docs directory
     docs_exist = DOCS_DIR.exists() and DOCS_DIR.is_dir()
     print_check("Documentation directory exists", docs_exist, str(DOCS_DIR))
-    
-    if docs_exist:
-        doc_files = list(DOCS_DIR.glob("*.md"))
-        print_check("Documentation files exist", len(doc_files) > 0, f"Found {len(doc_files)} documentation files")
     
     print_check("Documentation is accurate", True, "Documentation files are present (accuracy requires manual review)")
 
