@@ -1,0 +1,226 @@
+================================================================================
+PHASE 2: DATABASE SCHEMA MODIFICATIONS
+================================================================================
+
+STEP 2.1: UPDATE DATABASE SCHEMA
+---------------------------------
+TASK: Modify SQLite schema to work with Mem0
+
+ACTIONS:
+1. Open database/schema.sql
+
+2. Modify the memories table structure:
+   - Keep the table but rename it to memories_metadata
+   - Remove fields that Mem0 handles: content, importance_score, mentioned_count
+   - Add new field: mem0_memory_id TEXT UNIQUE NOT NULL
+   - Keep fields: id, user_id, memory_profile_id, memory_type, tags, created_at, updated_at
+   - Update purpose: This table now stores metadata linking to Mem0 memories
+
+3. Add index for mem0_memory_id:
+   - CREATE INDEX idx_memories_mem0_id ON memories_metadata(mem0_memory_id)
+
+4. Keep all other tables unchanged:
+   - users
+   - memory_profiles
+   - chat_sessions
+   - chat_messages
+   - agent_logs
+
+5. Document schema changes in docs/database_schema.md:
+   - Explain memories_metadata table purpose
+   - Document relationship with Mem0
+   - Note that actual memory content is in Mem0
+
+CHECKPOINT 2.1:
+□ Schema updated for Mem0 integration
+□ memories_metadata table defined
+□ Indexes updated
+□ Schema documentation updated
+□ Other tables unchanged
+
+---
+
+STEP 2.2: UPDATE DATABASE MODELS
+---------------------------------
+TASK: Modify SQLAlchemy models for new schema
+
+ACTIONS:
+1. Open database/models.py
+
+2. Rename Memory model to MemoryMetadata
+
+3. Update MemoryMetadata model fields:
+   - Remove: content (Column)
+   - Remove: importance_score (Column)
+   - Remove: mentioned_count (Column)
+   - Add: mem0_memory_id (Column, String, unique=True, nullable=False)
+   - Keep: id, user_id, memory_profile_id, memory_type, tags, created_at, updated_at
+
+4. Update relationships in other models if they reference Memory:
+   - Update to reference MemoryMetadata instead
+
+5. Update __repr__ method to reflect new structure
+
+6. Update to_dict() method to include mem0_memory_id
+
+7. Add comment documenting:
+   # This model stores metadata for memories managed by Mem0
+   # Actual memory content and embeddings are stored in Mem0
+
+8. Keep all other models (User, MemoryProfile, ChatSession, ChatMessage, AgentLog) unchanged
+
+CHECKPOINT 2.2:
+□ Memory model renamed to MemoryMetadata
+□ Model fields updated correctly
+□ Relationships updated
+□ Helper methods updated
+□ Documentation comments added
+□ Other models unchanged
+
+---
+
+STEP 2.3: CREATE DATABASE MIGRATION SCRIPT
+-------------------------------------------
+TASK: Create script to migrate existing data
+
+ACTIONS:
+1. Create new file: scripts/migrate_to_mem0.py
+
+2. Implement migration logic that:
+   - Connects to existing SQLite database
+   - Reads all records from old memories table
+   - For each memory record:
+     * Extract memory content
+     * Extract user_id and memory_profile_id
+     * Call Mem0 API to create memory with this content
+     * Store returned Mem0 memory_id
+     * Create new record in memories_metadata table with mem0_memory_id
+     * Copy over metadata (memory_type, tags, created_at, updated_at)
+   - Rename old memories table to memories_backup
+   - Create new memories_metadata table
+   - Insert migrated records
+   - Print migration summary (records migrated, any failures)
+
+3. Add command-line arguments:
+   - --dry-run: Show what would be migrated without doing it
+   - --backup: Create full database backup before migration
+   - --skip-backup-table: Don't keep memories_backup table
+
+4. Add error handling:
+   - Transaction rollback on failure
+   - Log each migration step
+   - Resume capability if interrupted
+
+5. Add verification step:
+   - Count records in old table
+   - Count records in new table
+   - Count records in Mem0
+   - Verify they match
+
+CHECKPOINT 2.3:
+□ Migration script created
+□ Migration logic implemented
+□ Command-line arguments added
+□ Error handling robust
+□ Verification step included
+
+---
+
+STEP 2.4: UPDATE DATABASE SERVICE LAYER
+----------------------------------------
+TASK: Modify DatabaseService for new schema
+
+ACTIONS:
+1. Open services/database_service.py
+
+2. Update all methods that reference Memory model:
+   - Change to reference MemoryMetadata model
+
+3. Update memory-related method signatures:
+   
+   OLD: create_memory(user_id, profile_id, content, importance_score, memory_type, tags)
+   NEW: create_memory_metadata(user_id, profile_id, mem0_memory_id, memory_type, tags)
+   
+   OLD: get_memories_by_profile(profile_id)
+   NEW: get_memory_metadata_by_profile(profile_id)
+   
+   OLD: update_memory(memory_id, **kwargs)
+   NEW: update_memory_metadata(memory_id, **kwargs)
+   
+   OLD: delete_memory(memory_id)
+   NEW: delete_memory_metadata(memory_id)
+   
+   Remove: increment_mention_count(memory_id)
+   Remove: search_memories(profile_id, query_text, limit=10)
+
+4. Add new methods:
+   - get_memory_metadata_by_mem0_id(mem0_memory_id)
+   - get_all_mem0_ids_by_profile(profile_id)
+   - link_mem0_memory(user_id, profile_id, mem0_memory_id, memory_type, tags)
+
+5. Update method implementations:
+   - Remove any logic related to content or importance_score
+   - Focus on metadata management only
+
+6. Keep all other DatabaseService methods unchanged:
+   - User operations
+   - Profile operations
+   - Session operations
+   - Message operations
+   - Agent log operations
+
+7. Add documentation comments explaining:
+   - This service now manages memory metadata only
+   - Actual memory operations are in Mem0Service
+
+CHECKPOINT 2.4:
+□ DatabaseService updated for metadata
+□ Method signatures updated
+□ New linking methods added
+□ Old search methods removed
+□ Other operations unchanged
+□ Documentation added
+
+---
+
+STEP 2.5: UPDATE DATABASE INITIALIZATION SCRIPT
+------------------------------------------------
+TASK: Modify initialization script for new schema
+
+ACTIONS:
+1. Open scripts/init_database.py
+
+2. Update table creation:
+   - Create memories_metadata table instead of memories table
+   - Keep all other table creation unchanged
+
+3. Remove sample memory data seeding:
+   - Don't create sample memories in SQLite
+   - Will be handled by Mem0 in later phase
+
+4. Update success message to mention:
+   - Mem0 will be initialized separately
+   - Database ready for Mem0 integration
+
+5. Add check for Mem0 configuration:
+   - Verify MEM0_API_KEY is set
+   - Warn if not configured
+   - Don't fail initialization (allows testing without Mem0)
+
+CHECKPOINT 2.5:
+□ Initialization script updated
+□ New schema implemented
+□ Sample data seeding adjusted
+□ Mem0 configuration check added
+□ Success message updated
+
+VERIFICATION CHECKPOINT 2:
+==========================
+□ Database schema updated
+□ Models updated
+□ Migration script ready
+□ Database service modified
+□ Initialization script updated
+□ Old memories table backed up
+□ Ready for Mem0 service implementation
+

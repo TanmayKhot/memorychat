@@ -1,0 +1,334 @@
+================================================================================
+PHASE 6: TESTING AND VERIFICATION
+================================================================================
+
+STEP 6.1: CREATE MEM0 SERVICE TESTS
+------------------------------------
+TASK: Build comprehensive tests for Mem0Service
+
+ACTIONS:
+1. Create new file: backend/tests/test_mem0_service.py
+
+2. Implement test setup:
+   - Mock Mem0 API responses
+   - Create test profile IDs
+   - Set up test data fixtures
+
+3. Implement test cases for add_memory:
+   - Test successful memory creation
+   - Test with metadata
+   - Test with empty content (should fail)
+   - Test with invalid profile_id
+   - Test API error handling
+   - Verify returned mem0_memory_id
+
+4. Implement test cases for search_memories:
+   - Test with simple query
+   - Test with filters
+   - Test with different limits
+   - Test empty results
+   - Test API error handling
+   - Verify result format
+
+5. Implement test cases for get_memory_by_id:
+   - Test successful retrieval
+   - Test with non-existent ID
+   - Test with wrong profile_id
+   - Test API error handling
+
+6. Implement test cases for update_memory:
+   - Test content update
+   - Test metadata update
+   - Test both updates
+   - Test with invalid ID
+   - Test API error handling
+
+7. Implement test cases for delete_memory:
+   - Test successful deletion
+   - Test with non-existent ID
+   - Test profile ownership validation
+   - Test API error handling
+
+8. Implement test cases for get_memory_stats:
+   - Test with multiple memories
+   - Test with empty profile
+   - Verify statistics accuracy
+
+9. Implement test cases for profile isolation:
+   - Create memories for two profiles
+   - Verify no cross-access
+   - Test validate_profile_isolation method
+
+10. Run all tests and verify passing
+
+CHECKPOINT 6.1:
+□ Test file created
+□ All Mem0Service methods tested
+□ Mock API responses working
+□ Edge cases covered
+□ Tests passing
+□ Code coverage good
+
+---
+
+STEP 6.2: UPDATE AGENT TESTS
+-----------------------------
+TASK: Update existing agent tests for Mem0
+
+ACTIONS:
+1. Open backend/tests/test_memory_manager_agent.py
+
+2. Update test setup:
+   - Mock Mem0Service instead of VectorService
+   - Update test fixtures
+
+3. Update test cases:
+   - Simplify expected behavior (Mem0 handles complexity)
+   - Test Mem0Service integration
+   - Test metadata storage
+   - Remove tests for removed methods
+   - Add tests for new _format_for_mem0 method
+
+4. Open backend/tests/test_memory_retrieval_agent.py
+
+5. Update test setup:
+   - Mock Mem0Service
+   - Update test fixtures
+
+6. Update test cases:
+   - Test Mem0 search integration
+   - Test result formatting
+   - Remove tests for removed search methods
+   - Add tests for metadata enrichment
+
+7. Open backend/tests/test_context_coordinator_agent.py
+
+8. Update test cases:
+   - Test with Mem0 errors
+   - Test fallback behavior
+   - Verify orchestration still works
+   - Test degraded mode (Mem0 unavailable)
+
+9. Run all agent tests and verify passing
+
+CHECKPOINT 6.2:
+□ Agent tests updated
+□ Mem0Service mocked correctly
+□ All tests passing
+□ New functionality tested
+□ Edge cases covered
+
+---
+
+STEP 6.3: CREATE INTEGRATION TESTS
+-----------------------------------
+TASK: Build end-to-end tests with Mem0
+
+ACTIONS:
+1. Create new file: backend/tests/test_mem0_integration.py
+
+2. Test Case: Complete conversation flow with memory
+   - Start session in NORMAL mode
+   - Send message with memorable information
+   - Verify Mem0 memory created
+   - Verify metadata stored in SQLite
+   - Send follow-up message
+   - Verify memory retrieved and used
+   - Check response includes memory context
+
+3. Test Case: Profile switching with Mem0
+   - Create two profiles
+   - Add memories to profile 1
+   - Switch to profile 2
+   - Send similar query
+   - Verify profile 1 memories NOT retrieved
+   - Add memories to profile 2
+   - Verify profile isolation maintained
+
+4. Test Case: Privacy modes with Mem0
+   - Test INCOGNITO mode blocks Mem0 operations
+   - Test PAUSE_MEMORY retrieves but doesn't create
+   - Test NORMAL mode works fully
+   - Verify mode transitions
+
+5. Test Case: Profile deletion with Mem0
+   - Create profile with memories
+   - Delete profile
+   - Verify Mem0 memories deleted
+   - Verify metadata deleted
+   - Attempt to access deleted memories (should fail)
+
+6. Test Case: Memory CRUD via API
+   - Create memory manually via API
+   - Retrieve via API
+   - Update via API
+   - Search via API
+   - Delete via API
+   - Verify all operations work with Mem0
+
+7. Test Case: Error handling
+   - Simulate Mem0 API failure
+   - Verify graceful degradation
+   - Verify conversation continues
+   - Verify error logged
+   - Verify user notified appropriately
+
+8. Test Case: Performance
+   - Create 50+ memories
+   - Perform searches
+   - Measure response times
+   - Verify acceptable performance
+
+9. Run all integration tests
+
+CHECKPOINT 6.3:
+□ Integration tests created
+□ All critical flows tested
+□ Privacy modes verified
+□ Profile isolation verified
+□ Error handling tested
+□ Performance acceptable
+□ Tests passing
+
+---
+
+STEP 6.4: MANUAL TESTING CHECKLIST
+-----------------------------------
+TASK: Perform manual testing of complete system
+
+ACTIONS:
+1. Test memory creation flow:
+   □ Start fresh database
+   □ Create user
+   □ Create memory profile
+   □ Start chat session
+   □ Send message with facts (name, preferences, etc.)
+   □ Verify memory created in Mem0 (check logs)
+   □ Verify metadata in SQLite
+   □ Check memories via API endpoint
+
+2. Test memory retrieval flow:
+   □ Continue conversation from above
+   □ Ask question requiring memory
+   □ Verify correct memories retrieved
+   □ Check response uses memory context
+   □ Verify relevance of retrieved memories
+
+3. Test profile switching:
+   □ Create second profile
+   □ Switch to new profile
+   □ Send same query as before
+   □ Verify different/no memories used
+   □ Add new memories to second profile
+   □ Switch back to first profile
+   □ Verify correct memories for each profile
+
+4. Test privacy modes:
+   □ Switch to INCOGNITO mode
+   □ Send messages
+   □ Verify NO Mem0 memories created
+   □ Verify NO memories retrieved
+   □ Switch to PAUSE_MEMORY mode
+   □ Verify memories retrieved but not created
+   □ Switch to NORMAL mode
+   □ Verify full functionality
+
+5. Test memory management:
+   □ View all memories via UI/API
+   □ Search memories
+   □ Update a memory
+   □ Delete a memory
+   □ Verify changes reflected in chat
+
+6. Test profile deletion:
+   □ Create profile with several memories
+   □ Note memory count
+   □ Delete profile
+   □ Verify Mem0 memories deleted (check logs)
+   □ Verify metadata deleted from SQLite
+   □ Attempt to access deleted data (should fail)
+
+7. Test error scenarios:
+   □ Invalid API key (test Mem0 error handling)
+   □ Network timeout (if possible to simulate)
+   □ Invalid memory IDs
+   □ Cross-profile access attempts
+   □ Verify graceful error handling
+
+8. Test performance:
+   □ Create 100+ memories
+   □ Perform searches
+   □ Check response times
+   □ Verify no significant slowdown
+
+9. Document any issues found
+
+CHECKPOINT 6.4:
+□ All manual tests completed
+□ Memory creation working
+□ Memory retrieval working
+□ Profile isolation confirmed
+□ Privacy modes working
+□ Error handling verified
+□ Performance acceptable
+□ Issues documented
+
+---
+
+STEP 6.5: MIGRATION TESTING
+----------------------------
+TASK: Test migration from old system to Mem0
+
+ACTIONS:
+1. Prepare test database:
+   - Use existing database with old memories table
+   - Create sample memories in old format
+   - Note count and content of memories
+
+2. Run migration script:
+   - Execute scripts/migrate_to_mem0.py with --dry-run
+   - Review proposed changes
+   - Execute without --dry-run
+   - Monitor for errors
+
+3. Verify migration results:
+   - Check migration logs
+   - Count memories in Mem0
+   - Count metadata records in memories_metadata
+   - Verify counts match original
+   - Sample check content accuracy
+
+4. Test post-migration functionality:
+   - Start application
+   - Load migrated profile
+   - Start conversation
+   - Verify migrated memories retrieved
+   - Add new memories
+   - Verify new and old memories both work
+
+5. Test rollback (if needed):
+   - Restore from memories_backup table
+   - Verify data intact
+   - Document rollback process
+
+6. Document migration issues encountered
+
+CHECKPOINT 6.5:
+□ Migration script tested
+□ Dry-run successful
+□ Full migration successful
+□ Data integrity verified
+□ Post-migration functionality working
+□ Rollback tested
+□ Issues documented
+
+VERIFICATION CHECKPOINT 6:
+==========================
+□ All automated tests passing
+□ Manual testing complete
+□ Integration verified
+□ Migration tested
+□ Performance acceptable
+□ No critical issues
+□ Ready for documentation updates
+

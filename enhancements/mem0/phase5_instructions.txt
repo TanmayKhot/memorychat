@@ -1,0 +1,300 @@
+================================================================================
+PHASE 5: API AND SERVICE LAYER UPDATES
+================================================================================
+
+STEP 5.1: UPDATE CHAT SERVICE
+------------------------------
+TASK: Modify ChatService to work with Mem0
+
+ACTIONS:
+1. Open services/chat_service.py
+
+2. Update imports:
+   - Add: from services.mem0_service import Mem0Service
+   - Keep: from agents.context_coordinator_agent import ContextCoordinatorAgent
+   - Keep: from services.database_service import DatabaseService
+
+3. Update __init__ method:
+   - Initialize Mem0Service
+   - Keep all existing service initializations
+
+4. Update process_message() method:
+   - Logic flow remains the same (agents handle Mem0 internally)
+   - No major changes needed
+   - Verify error handling includes Mem0 errors
+
+5. Update _save_memories() helper method:
+   
+   OLD LOGIC:
+   - Receive extracted memories from Memory Manager
+   - Save to SQLite memories table
+   - Save embeddings to ChromaDB
+   
+   NEW LOGIC:
+   - Receive Mem0 memory IDs from Memory Manager
+   - Save metadata to memories_metadata table
+   - Link mem0_memory_id with profile_id
+   - Store tags and memory_type
+
+6. Add new helper method: _link_mem0_memory()
+   - Links Mem0 memory ID with profile metadata
+   - Calls DatabaseService.link_mem0_memory()
+   - Handles errors gracefully
+
+7. Update error handling:
+   - Add Mem0-specific error cases
+   - Handle Mem0 API failures
+   - Log all Mem0 operations
+
+8. Update logging:
+   - Log Mem0 memory creation
+   - Log metadata linkage
+   - Track Mem0 operation performance
+
+CHECKPOINT 5.1:
+□ ChatService updated for Mem0
+□ Memory saving logic updated
+□ Metadata linkage implemented
+□ Error handling updated
+□ Logging comprehensive
+
+---
+
+STEP 5.2: UPDATE MEMORY API ENDPOINTS
+--------------------------------------
+TASK: Modify memory-related API endpoints for Mem0
+
+ACTIONS:
+1. Open api/endpoints/memories.py
+
+2. Update GET /api/profiles/{profile_id}/memories endpoint:
+   
+   OLD LOGIC:
+   - Query SQLite memories table
+   - Return memories with content
+   
+   NEW LOGIC:
+   - Query memories_metadata table for mem0_memory_ids
+   - For each mem0_memory_id, fetch from Mem0Service
+   - Enrich with metadata from memories_metadata table
+   - Return combined results
+   - Support pagination on combined results
+
+3. Update GET /api/memories/{memory_id} endpoint:
+   
+   OLD LOGIC:
+   - Query SQLite by memory_id
+   - Return single memory
+   
+   NEW LOGIC:
+   - Query memories_metadata by memory_id
+   - Get mem0_memory_id from metadata
+   - Fetch full memory from Mem0Service
+   - Enrich with local metadata
+   - Return combined result
+
+4. Update PUT /api/memories/{memory_id} endpoint:
+   
+   OLD LOGIC:
+   - Update SQLite record
+   - Update ChromaDB embedding if content changed
+   
+   NEW LOGIC:
+   - Get mem0_memory_id from memories_metadata
+   - Update memory in Mem0 via Mem0Service.update_memory()
+   - Update local metadata in memories_metadata
+   - Return updated memory
+
+5. Update DELETE /api/memories/{memory_id} endpoint:
+   
+   OLD LOGIC:
+   - Delete from SQLite
+   - Delete from ChromaDB
+   
+   NEW LOGIC:
+   - Get mem0_memory_id from memories_metadata
+   - Delete from Mem0 via Mem0Service.delete_memory()
+   - Delete metadata record from memories_metadata table
+   - Return success message
+
+6. Update POST /api/memories/search endpoint:
+   
+   OLD LOGIC:
+   - Use Memory Retrieval Agent with custom search
+   
+   NEW LOGIC:
+   - Use Mem0Service.search_memories() directly
+   - Enrich results with metadata from memories_metadata
+   - Return formatted results
+   - Support filtering by memory_type and tags
+
+7. Add new endpoint: GET /api/profiles/{profile_id}/memory-stats
+   - Returns statistics about memories
+   - Uses Mem0Service.get_memory_stats()
+   - Includes: total count, memory types, tags distribution
+   - Useful for analytics
+
+8. Update error handling:
+   - Handle Mem0 API errors (rate limits, network issues)
+   - Handle cases where mem0_memory_id exists but memory deleted in Mem0
+   - Return appropriate HTTP status codes
+   - Provide clear error messages
+
+9. Update response models:
+   - Add mem0_memory_id field to MemoryResponse model
+   - Keep all existing fields
+   - Ensure backwards compatibility
+
+10. Update validation:
+    - Validate profile ownership before operations
+    - Validate mem0_memory_id format
+    - Check memory exists before updates
+
+CHECKPOINT 5.2:
+□ All memory endpoints updated
+□ Mem0Service integrated
+□ Metadata enrichment working
+□ New stats endpoint added
+□ Error handling comprehensive
+□ Response models updated
+□ Validation in place
+
+---
+
+STEP 5.3: UPDATE PROFILE DELETION ENDPOINT
+-------------------------------------------
+TASK: Ensure profile deletion removes Mem0 memories
+
+ACTIONS:
+1. Open api/endpoints/memory_profiles.py
+
+2. Update DELETE /api/profiles/{profile_id} endpoint:
+   
+   OLD LOGIC:
+   - Check if only profile (prevent deletion)
+   - Delete profile from database
+   - Cascade deletes memories from SQLite
+   - Cascade deletes from ChromaDB
+   
+   NEW LOGIC:
+   - Check if only profile (prevent deletion)
+   - Call Mem0Service.delete_all_memories_for_profile()
+   - Delete all records from memories_metadata for this profile
+   - Delete profile from database (other cascade deletes still work)
+   - Return success with count of memories deleted
+
+3. Add confirmation step:
+   - Return count of memories that will be deleted
+   - Require confirmation query parameter
+   - ?confirm=true to actually delete
+   - Safety measure for destructive operation
+
+4. Update error handling:
+   - Handle Mem0 deletion failures gracefully
+   - If Mem0 deletion fails, rollback database deletion
+   - Use transaction for atomic operation
+   - Log all failures
+
+5. Update logging:
+   - Log profile deletion attempts
+   - Log count of Mem0 memories deleted
+   - Log any failures
+   - Track deletion performance
+
+CHECKPOINT 5.3:
+□ Profile deletion updated
+□ Mem0 memories deleted on profile deletion
+□ Confirmation step added
+□ Transaction handling correct
+□ Error handling robust
+□ Logging comprehensive
+
+---
+
+STEP 5.4: UPDATE SESSION ENDPOINTS (MINOR)
+-------------------------------------------
+TASK: Verify session endpoints work with Mem0
+
+ACTIONS:
+1. Open api/endpoints/sessions.py
+
+2. Review DELETE /api/sessions/{session_id} endpoint:
+   - Currently deletes messages
+   - Does NOT delete memories (by design - memories persist)
+   - No changes needed
+   - Add comment explaining memory persistence
+
+3. Review PUT /api/sessions/{session_id}/privacy-mode endpoint:
+   - Changes privacy mode
+   - Affects future memory operations
+   - No changes needed
+   - Verify agents respect privacy mode with Mem0
+
+4. Update documentation:
+   - Add note that memories persist after session deletion
+   - Explain memory lifecycle separate from sessions
+   - Document privacy mode effects on Mem0 operations
+
+CHECKPOINT 5.4:
+□ Session endpoints reviewed
+□ No code changes needed
+□ Documentation updated
+□ Privacy mode handling verified
+
+---
+
+STEP 5.5: UPDATE API ERROR HANDLERS
+------------------------------------
+TASK: Add error handling for Mem0-specific errors
+
+ACTIONS:
+1. Open api/middleware/error_handler.py
+
+2. Add new exception class: Mem0ServiceException
+   - For Mem0 API errors
+   - Include error code, message, details
+   - Inherit from base custom exception
+
+3. Add exception handler for Mem0ServiceException:
+   - Map to appropriate HTTP status code (usually 503)
+   - Format user-friendly error message
+   - Hide Mem0 API details from users
+   - Log full error details internally
+
+4. Add exception class: Mem0RateLimitException
+   - Specific for rate limiting
+   - Return 429 status code
+   - Include retry-after header if available
+
+5. Add exception class: Mem0ConnectionException
+   - For network/connection issues
+   - Return 503 status code
+   - Suggest retry to user
+
+6. Update global exception handler:
+   - Catch any unhandled Mem0 errors
+   - Log with context
+   - Return generic error to user
+   - Alert if frequent
+
+7. Update error response format:
+   - Include error_type field (e.g., "mem0_api_error")
+   - Include is_retryable boolean
+   - Include suggested_action for user
+
+CHECKPOINT 5.5:
+□ Mem0 exception classes added
+□ Exception handlers implemented
+□ Error responses formatted correctly
+□ User-friendly messages
+□ Internal logging detailed
+
+VERIFICATION CHECKPOINT 5:
+==========================
+□ ChatService updated
+□ All API endpoints updated
+□ Profile deletion handles Mem0
+□ Error handling comprehensive
+□ Response models updated
+□ Ready for testing
+

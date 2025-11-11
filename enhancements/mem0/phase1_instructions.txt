@@ -1,0 +1,142 @@
+================================================================================
+PHASE 1: ENVIRONMENT PREPARATION AND MEM0 SETUP
+================================================================================
+
+STEP 1.1: UPDATE PROJECT DEPENDENCIES
+--------------------------------------
+TASK: Add Mem0 library to project requirements
+
+ACTIONS:
+1. Open backend/requirements.txt file
+
+2. Add the following new dependencies:
+   - mem0ai==0.1.0 (or latest stable version)
+   - qdrant-client==1.7.0 (Mem0's recommended vector DB)
+
+3. Remove the following dependencies (no longer needed):
+   - chromadb==0.4.18
+
+4. Keep all other existing dependencies unchanged
+
+5. Document the change in a comment:
+   # Memory Management - Using Mem0
+   # Replaced ChromaDB with Mem0's integrated solution
+
+CHECKPOINT 1.1:
+□ requirements.txt updated
+□ Mem0 dependency added
+□ ChromaDB dependency removed
+□ Comment documenting change added
+
+---
+
+STEP 1.2: UPDATE ENVIRONMENT CONFIGURATION
+-------------------------------------------
+TASK: Add Mem0 configuration to environment variables
+
+ACTIONS:
+1. Open backend/.env file
+
+2. Add new environment variables:
+   MEM0_API_KEY=your-mem0-api-key-here
+   MEM0_ORGANIZATION_ID=your-org-id-here
+   MEM0_PROJECT_ID=your-project-id-here
+   QDRANT_PATH=../data/qdrant
+   QDRANT_HOST=localhost
+   QDRANT_PORT=6333
+
+3. Remove old environment variables:
+   CHROMADB_PATH=../data/chromadb
+
+4. Keep OPENAI_API_KEY and all other existing variables
+
+5. Update backend/.env.example with the same changes using placeholder values
+
+6. Open backend/config/settings.py
+
+7. Add new configuration fields to the Settings class:
+   - mem0_api_key: str
+   - mem0_organization_id: str
+   - mem0_project_id: str
+   - qdrant_path: str
+   - qdrant_host: str
+   - qdrant_port: int
+
+8. Remove old configuration fields:
+   - chromadb_path: str
+
+9. Add validation for required Mem0 fields
+
+CHECKPOINT 1.2:
+□ .env file updated with Mem0 variables
+□ .env.example updated
+□ settings.py updated with new config fields
+□ Old ChromaDB config removed
+□ Configuration validation added
+
+---
+
+STEP 1.3: UPDATE PROJECT DIRECTORY STRUCTURE
+---------------------------------------------
+TASK: Modify data directory for Mem0
+
+ACTIONS:
+1. Update .gitignore file to include:
+   - data/qdrant/
+   - Remove: data/chromadb/
+
+2. Create directory structure documentation noting:
+   - data/qdrant/ will store Mem0's vector database
+   - data/sqlite/ remains for user, profile, session, message data
+
+3. Update docs/ARCHITECTURE.md to reflect new memory storage:
+   - Document that Mem0 handles memory storage
+   - Note that Qdrant is used by Mem0 for vectors
+   - Remove references to ChromaDB
+
+CHECKPOINT 1.3:
+□ .gitignore updated
+□ Directory structure documented
+□ Architecture documentation updated
+□ References to ChromaDB removed from docs
+
+---
+
+STEP 1.4: INSTALL UPDATED DEPENDENCIES
+---------------------------------------
+TASK: Install new dependencies in virtual environment
+
+ACTIONS:
+1. Navigate to backend/ directory
+
+2. Ensure virtual environment is activated
+
+3. Run: pip install --upgrade pip
+
+4. Run: pip install -r requirements.txt
+
+5. Verify Mem0 installation by checking: pip show mem0ai
+
+6. Verify Qdrant client installation: pip show qdrant-client
+
+7. Verify ChromaDB is removed: pip show chromadb (should return nothing)
+
+8. Test imports in Python:
+   - from mem0 import Memory
+   - from qdrant_client import QdrantClient
+
+CHECKPOINT 1.4:
+□ Dependencies installed successfully
+□ Mem0 library verified
+□ Qdrant client verified
+□ ChromaDB removed
+□ Test imports successful
+
+VERIFICATION CHECKPOINT 1:
+==========================
+□ Environment prepared for Mem0
+□ All dependencies installed
+□ Configuration files updated
+□ Old ChromaDB references removed
+□ Ready to implement Mem0 service
+

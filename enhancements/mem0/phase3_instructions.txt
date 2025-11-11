@@ -1,0 +1,247 @@
+================================================================================
+PHASE 3: MEM0 SERVICE IMPLEMENTATION
+================================================================================
+
+STEP 3.1: CREATE MEM0 SERVICE CLASS
+------------------------------------
+TASK: Build new service class to interact with Mem0 API
+
+ACTIONS:
+1. Delete old file: services/vector_service.py
+
+2. Create new file: services/mem0_service.py
+
+3. Implement Mem0Service class with initialization:
+   - Import Memory from mem0 library
+   - Initialize Mem0 client in __init__ method
+   - Accept configuration parameters: api_key, organization_id, project_id
+   - Set up connection to Mem0
+   - Initialize logger for this service
+   - Add error handling for connection issues
+
+4. Add configuration validation:
+   - Check if API key is provided
+   - Check if organization_id is provided
+   - Raise clear error if missing
+   - Log initialization success
+
+5. Add private helper methods:
+   - _format_mem0_user_id(profile_id): Convert profile_id to Mem0 user identifier
+   - _log_operation(operation, profile_id, success, details): Log all Mem0 operations
+   - _handle_mem0_error(error, operation): Standardized error handling
+
+6. Add documentation:
+   - Class-level docstring explaining purpose
+   - Document that each memory_profile_id maps to unique Mem0 user_id
+   - Document error handling approach
+
+CHECKPOINT 3.1:
+□ Mem0Service class created
+□ Initialization implemented
+□ Configuration validation added
+□ Helper methods defined
+□ Documentation added
+□ Error handling framework in place
+
+---
+
+STEP 3.2: IMPLEMENT MEMORY CREATION
+------------------------------------
+TASK: Implement method to add memories via Mem0
+
+ACTIONS:
+1. In services/mem0_service.py, add method: add_memory()
+
+2. Method signature:
+   - add_memory(content: str, profile_id: int, user_id: int, metadata: dict = None) -> dict
+
+3. Implementation steps:
+   - Format profile_id to Mem0 user_id format
+   - Prepare memory data with content
+   - Add metadata if provided (memory_type, tags, source_session_id)
+   - Call Mem0 API: memory.add()
+   - Extract returned memory_id from Mem0
+   - Log the operation
+   - Return dict with: mem0_memory_id, success, error (if any)
+
+4. Add error handling:
+   - Catch Mem0 API errors
+   - Handle rate limiting
+   - Handle network errors
+   - Return error details in result dict
+   - Log all errors
+
+5. Add validation:
+   - Check content is not empty
+   - Check profile_id is valid integer
+   - Validate metadata structure if provided
+
+6. Add logging:
+   - Log memory creation attempt
+   - Log success with memory_id
+   - Log failures with details
+
+CHECKPOINT 3.2:
+□ add_memory method implemented
+□ Mem0 API integration working
+□ Error handling comprehensive
+□ Validation added
+□ Logging in place
+□ Returns proper result dict
+
+---
+
+STEP 3.3: IMPLEMENT MEMORY RETRIEVAL
+-------------------------------------
+TASK: Implement method to search and retrieve memories
+
+ACTIONS:
+1. In services/mem0_service.py, add method: search_memories()
+
+2. Method signature:
+   - search_memories(query: str, profile_id: int, limit: int = 5, filters: dict = None) -> list
+
+3. Implementation steps:
+   - Format profile_id to Mem0 user_id format
+   - Prepare search parameters (query, user_id, limit)
+   - Add filters if provided (memory_type, tags, date_range)
+   - Call Mem0 API: memory.search()
+   - Parse returned memories
+   - Extract relevant fields: memory_id, content, score, metadata
+   - Sort by relevance score (Mem0 provides this)
+   - Log the operation
+   - Return list of memory dicts
+
+4. Add method: get_all_memories()
+   - get_all_memories(profile_id: int, limit: int = 100) -> list
+   - Gets all memories for a profile
+   - Useful for profile analytics
+
+5. Add method: get_memory_by_id()
+   - get_memory_by_id(mem0_memory_id: str, profile_id: int) -> dict
+   - Retrieves specific memory
+   - Validates profile access
+
+6. Add error handling:
+   - Handle empty results gracefully
+   - Catch API errors
+   - Return empty list on error (with logging)
+
+7. Add result formatting:
+   - Convert Mem0 response to consistent dict format
+   - Include: memory_id, content, score, created_at, metadata
+   - Add profile_id to each result for tracking
+
+CHECKPOINT 3.3:
+□ search_memories method implemented
+□ get_all_memories method implemented
+□ get_memory_by_id method implemented
+□ Result formatting consistent
+□ Error handling robust
+□ Logging in place
+
+---
+
+STEP 3.4: IMPLEMENT MEMORY UPDATES AND DELETION
+------------------------------------------------
+TASK: Implement methods to update and delete memories
+
+ACTIONS:
+1. In services/mem0_service.py, add method: update_memory()
+
+2. Method signature:
+   - update_memory(mem0_memory_id: str, profile_id: int, new_content: str = None, new_metadata: dict = None) -> dict
+
+3. Implementation steps:
+   - Verify profile has access to this memory
+   - Call Mem0 API: memory.update()
+   - Handle partial updates (content only, metadata only, or both)
+   - Log the operation
+   - Return success status
+
+4. Add method: delete_memory()
+   - delete_memory(mem0_memory_id: str, profile_id: int) -> dict
+
+5. Implementation steps:
+   - Verify profile has access to this memory
+   - Call Mem0 API: memory.delete()
+   - Log the operation
+   - Return success status
+
+6. Add method: delete_all_memories_for_profile()
+   - delete_all_memories_for_profile(profile_id: int) -> dict
+   - Used when deleting a memory profile
+   - Batch delete all memories
+   - Return count of deleted memories
+
+7. Add error handling:
+   - Handle "memory not found" errors
+   - Handle permission errors
+   - Log all operations
+   - Return clear error messages
+
+8. Add safety checks:
+   - Confirm profile_id matches memory owner before delete
+   - Add dry_run parameter for testing
+   - Log all destructive operations
+
+CHECKPOINT 3.4:
+□ update_memory method implemented
+□ delete_memory method implemented
+□ delete_all_memories_for_profile implemented
+□ Safety checks in place
+□ Error handling comprehensive
+□ Logging for all operations
+
+---
+
+STEP 3.5: IMPLEMENT MEMORY ANALYTICS
+-------------------------------------
+TASK: Add methods for memory statistics and insights
+
+ACTIONS:
+1. In services/mem0_service.py, add method: get_memory_stats()
+
+2. Method signature:
+   - get_memory_stats(profile_id: int) -> dict
+
+3. Implementation steps:
+   - Get all memories for profile
+   - Calculate total count
+   - Analyze memory types distribution
+   - Analyze tags distribution
+   - Calculate date range (oldest to newest)
+   - Return stats dict
+
+4. Add method: get_related_memories()
+   - get_related_memories(mem0_memory_id: str, profile_id: int, limit: int = 5) -> list
+   - Uses Mem0's built-in relationship detection
+   - Returns memories related to given memory
+
+5. Add method: validate_profile_isolation()
+   - validate_profile_isolation(profile_id: int, other_profile_id: int) -> bool
+   - Verifies no memory leakage between profiles
+   - Used for testing and auditing
+
+6. Add helper method: _extract_metadata_stats()
+   - Analyzes metadata across memories
+   - Identifies patterns
+   - Returns insights dict
+
+CHECKPOINT 3.5:
+□ get_memory_stats implemented
+□ get_related_memories implemented
+□ validate_profile_isolation implemented
+□ Analytics helper methods added
+□ All methods tested
+
+VERIFICATION CHECKPOINT 3:
+==========================
+□ Mem0Service fully implemented
+□ All CRUD operations working
+□ Search functionality working
+□ Analytics methods functional
+□ Error handling comprehensive
+□ Logging complete
+□ Ready to update agents
+
