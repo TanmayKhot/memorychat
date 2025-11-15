@@ -4,7 +4,10 @@ __pycache__/
 *.db
 *.sqlite
 *.log
-data/
+# Data directories
+data/qdrant/
+data/sqlite/*.db
+data/sqlite/*.sqlite
 .venv/
 venv/
 

@@ -66,7 +66,12 @@ MemoryChat is a conversational AI that keeps track of your conversations across 
    ENVIRONMENT=development
    LOG_LEVEL=DEBUG
    SQLITE_DATABASE_PATH=../data/sqlite/memorychat.db
-   CHROMADB_PATH=../data/chromadb
+   MEM0_API_KEY=your-mem0-api-key-here
+   MEM0_ORGANIZATION_ID=your-org-id-here
+   MEM0_PROJECT_ID=your-project-id-here
+   QDRANT_PATH=../data/qdrant
+   QDRANT_HOST=localhost
+   QDRANT_PORT=6333
    API_HOST=127.0.0.1
    API_PORT=8000
    EOF
@@ -92,8 +97,8 @@ MemoryChat is a conversational AI that keeps track of your conversations across 
 ## Architecture
 
 - **API Endpoints**: RESTful API layer handling user requests for users, memory profiles, sessions, chat, memories, and analytics
-- **Services**: Business logic layer providing database operations, vector search, chat processing, monitoring, and error handling
-- **Database**: SQLite database for structured data storage and ChromaDB for vector embeddings
+- **Services**: Business logic layer providing database operations, memory management, chat processing, monitoring, and error handling
+- **Database**: SQLite database for structured data storage and Mem0 with Qdrant for intelligent memory storage and retrieval
 - **Agents**: Multi-agent system coordinating conversation, memory management, privacy enforcement, and analysis
 - **Frontend**: Web-based user interface built with vanilla JavaScript for interacting with the backend API
 
