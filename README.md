@@ -110,3 +110,12 @@ MemoryChat is a conversational AI that keeps track of your conversations across 
 - **Conversation Agent**: Main conversation agent that generates natural, contextually appropriate responses
 - **Memory Manager Agent**: Extracts and manages memories from conversations
 - **Conversation Analyst Agent**: Analyzes conversations and provides insights
+
+## To-Do
+
+- [ ] Integrate Mem0 for better memory management
+- [ ] Optimize Performance
+- [ ] Provide memory overview for different profiles
+- [ ] Provide an option to delete specific memory content from selected profiles
+
+
